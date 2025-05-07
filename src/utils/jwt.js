@@ -7,7 +7,6 @@ exports.signJwtToken = (userId) => {
 };
 
 // jwt.js
-
 exports.verifyJwtToken = (token) => {
   try {
     return jwt.verify(token, process.env.JWT_SECRET);

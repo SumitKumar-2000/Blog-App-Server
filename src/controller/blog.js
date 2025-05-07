@@ -88,18 +88,18 @@ exports.getAllBlogsByUser = catchAsync(async (req, res, next) => {
   const offset = page * limit;
 
   const user_id = req.user?.id;
-
+  console.log("user_id: ", user_id)
+  
   if (!user_id) {
     return next(new AppError("Invalid user. Please log in again.", Status.UNAUTHORIZED));
   }
 
   const whereCondition = { user_id };
 
-  const {count, rows: blogs} = await Model.Blog.findAll({
+  const { count, rows: blogs } = await Model.Blog.findAndCountAll({
     where: whereCondition,
     limit,
     offset,
-    raw: true,
     order: [["created_at", "DESC"]],
     include: [
       {
@@ -110,7 +110,12 @@ exports.getAllBlogsByUser = catchAsync(async (req, res, next) => {
     ],
     attributes: {
       include: [
-        [sequelize.literal(helper.rawQueryFormatDate("blogs.created_at","DD Mon YYYY HH12:MI AM")), "formatted_created_at"],
+        [
+          sequelize.literal(
+            helper.rawQueryFormatDate("blogs.created_at", "DD Mon YYYY HH12:MI AM")
+          ),
+          "formatted_created_at",
+        ],
       ],
     },
   });
@@ -120,7 +125,7 @@ exports.getAllBlogsByUser = catchAsync(async (req, res, next) => {
   res.status(Status.OK).json({
     status: "success",
     message: "Blogs fetched successfully.",
-    data: blogs,
+    data: blogs || [],
     pagination: {
       currentPage: page + 1,
       lastPage,
