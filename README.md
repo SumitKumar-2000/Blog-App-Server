@@ -67,8 +67,8 @@ A secure and scalable Blog App REST API built with **Node.js**, **Express.js**, 
 ## Installation
 
 ```bash
-git clone https://github.com/SumitKumar-2000/blog-management-server.git
-cd blog-management-server
+git clone https://github.com/SumitKumar-2000/Blog-App-Server.git
+cd Blog-App-Server
 npm install
 ```
 
