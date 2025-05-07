@@ -1,6 +1,8 @@
 const { catchAsync, AppError } = require("../utils/appError");
 const {deleteImage, uploadBase64} = require("../utils/cloudnary");
+const sequelize = require("../config/database");
 const Status = require("../utils/statusCodes");
+const helper = require("../utils/helper");
 const Model = require("../models/index");
 
 const getBlogFromUser = async (id, user_id) => {
@@ -41,24 +43,44 @@ exports.createBlog = catchAsync(async (req, res, next) => {
   });
 });
 
+
 exports.getAllBlogs = catchAsync(async (req, res, next) => {
   const page = req.query.page ? parseInt(req.query.page) - 1 : 0;
   const limit = req.query.limit ? parseInt(req.query.limit) : 10;
   const offset = page * limit;
 
-  const blogs = await Model.Blog.findAll({
+  const { count, rows: blogs } = await Model.Blog.findAndCountAll({
     limit,
     offset,
-    raw: true,
     order: [["created_at", "DESC"]],
+    include: [
+      {
+        model: Model.User,
+        as: "user",
+        attributes: ["full_name"],
+      },
+    ],
+    attributes: {
+      include: [
+        [sequelize.literal(helper.rawQueryFormatDate("blogs.created_at","DD Mon YYYY HH12:MI AM")), "formatted_created_at"],
+      ],
+    },
   });
+
+  const lastPage = Math.ceil(count / limit);
 
   res.status(Status.OK).json({
     status: "success",
     message: "All blogs fetched successfully.",
     data: blogs,
+    pagination: {
+      currentPage: page + 1,
+      lastPage,
+      totalItems: count,
+    },
   });
 });
+
 
 exports.getAllBlogsByUser = catchAsync(async (req, res, next) => {
   const page = req.query.page ? parseInt(req.query.page) - 1 : 0;
@@ -73,20 +95,79 @@ exports.getAllBlogsByUser = catchAsync(async (req, res, next) => {
 
   const whereCondition = { user_id };
 
-  const blogs = await Model.Blog.findAll({
+  const {count, rows: blogs} = await Model.Blog.findAll({
     where: whereCondition,
     limit,
     offset,
     raw: true,
     order: [["created_at", "DESC"]],
+    include: [
+      {
+        model: Model.User,
+        as: "user",
+        attributes: ["full_name"],
+      },
+    ],
+    attributes: {
+      include: [
+        [sequelize.literal(helper.rawQueryFormatDate("blogs.created_at","DD Mon YYYY HH12:MI AM")), "formatted_created_at"],
+      ],
+    },
   });
+
+  const lastPage = Math.ceil(count / limit);
+
+  res.status(Status.OK).json({
+    status: "success",
+    message: "Blogs fetched successfully.",
+    data: blogs,
+    pagination: {
+      currentPage: page + 1,
+      lastPage,
+      totalItems: count,
+    },
+  });
+});
+
+exports.getBlogByIdPublic = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+
+  if (!id) {
+    return next(new AppError("Blog ID is required.", Status.BAD_REQUEST));
+  }
+
+  const blog = await Model.Blog.findOne({
+    where: { id },
+    include: [
+      {
+        model: Model.User,
+        as: "user",
+        attributes: ["id", "full_name"],
+      },
+      {
+        model: Model.Comment,
+        as: "comments",
+        attributes: ["id", "content", "created_at"],
+      },
+    ],
+    attributes: {
+      include: [
+        [sequelize.literal(helper.rawQueryFormatDate("blogs.created_at","DD Mon YYYY HH12:MI AM")), "formatted_created_at"],
+      ],
+    },
+  });
+
+  if (!blog) {
+    return next(new AppError("Blog not found", Status.NOT_FOUND));
+  }
 
   res.status(Status.OK).json({
     status: "success",
     message: "Blog fetched successfully.",
-    data: blogs,
+    data: blog,
   });
 });
+
 
 exports.getBlogById = catchAsync(async (req, res, next) => {
   const { id } = req.params;

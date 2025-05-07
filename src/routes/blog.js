@@ -6,6 +6,10 @@ router
   .route("/")
   .get(controller.getAllBlogs)
   .post(Protect, controller.createBlog),
+
+  router
+  .route("/:id")
+  .get(controller.getBlogByIdPublic)
   
 router.use(Protect);
 
@@ -14,7 +18,7 @@ router
   .get(controller.getAllBlogsByUser);
 
 router
-  .route("/:id")
+  .route("/:id/user")
   .get(controller.getBlogById)
   .patch(controller.updateBlogById)
   .delete(controller.deleteBlogById);

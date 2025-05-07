@@ -25,6 +25,9 @@ exports.registerUser = catchAsync(async (req, res, next) => {
     return next(new AppError("Email already in use", Status.CONFLICT));
   }
 
+  console.log(full_name, email, password);
+  
+
   const hashedPassword = await bcrypt.hash(password, 10);
 
   await Model.User.create({
