@@ -153,6 +153,13 @@ exports.getBlogByIdPublic = catchAsync(async (req, res, next) => {
         model: Model.Comment,
         as: "comments",
         attributes: ["id", "content", "created_at"],
+        include: [
+          {
+            as: "user",
+            model: Model.User,
+            attributes: ["id", "full_name"],
+          },
+        ]
       },
     ],
     attributes: {
